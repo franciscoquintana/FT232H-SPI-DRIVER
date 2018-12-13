@@ -1128,7 +1128,7 @@ int ftdi_read_pins(struct ftdi_context *ftdi, unsigned char *pins)
     if (ftdi == NULL || ftdi->usb_dev == NULL)
         ftdi_error_return(-2, "USB device unavailable");
 
-    if (usb_control_msg(ftdi->usb_dev, usb_sndctrlpipe(ftdi->usb_dev, 0), SIO_READ_PINS_REQUEST, FTDI_DEVICE_IN_REQTYPE, 0, ftdi->index, (unsigned char *)pins, 1, ftdi->usb_read_timeout) != 1)
+    if (usb_control_msg(ftdi->usb_dev, usb_rcvctrlpipe(ftdi->usb_dev, 0), SIO_READ_PINS_REQUEST, FTDI_DEVICE_IN_REQTYPE, 0, ftdi->index, (unsigned char *)pins, 1, ftdi->usb_read_timeout) != 1)
         ftdi_error_return(-1, "read pins failed");
 
     return 0;

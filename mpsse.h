@@ -196,6 +196,7 @@ int PinState(struct mpsse_context *mpsse, int pin, int state);
 int Tristate(struct mpsse_context *mpsse);
 char Version(void);
 char *Read(struct mpsse_context *mpsse, int size);
+char *Transfer(struct mpsse_context *mpsse, char *data, int size);
 
 
 #endif

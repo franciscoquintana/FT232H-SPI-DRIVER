@@ -832,11 +832,7 @@ char ReadBits(struct mpsse_context *mpsse, int size)
  * Returns a pointer to the read data on success.
  * Returns NULL on failure.
  */
-#ifdef SWIGPYTHON
-swig_string_data Transfer(struct mpsse_context *mpsse, char *data, int size)
-#else
 char *Transfer(struct mpsse_context *mpsse, char *data, int size)
-#endif
 {
 	unsigned char *txdata = NULL, *buf = NULL;
 	int n = 0, data_size = 0, rxsize = 0, retval = 0;
@@ -884,14 +880,7 @@ char *Transfer(struct mpsse_context *mpsse, char *data, int size)
 		}
 	}
 
-#ifdef SWIGPYTHON
-	swig_string_data sdata = { 0 };
-	sdata.size = n;
-	sdata.data = (char *) buf;
-	return sdata;
-#else
 	return (char *) buf;
-#endif
 }
 
 /*
@@ -1108,8 +1097,11 @@ int ReadPins(struct mpsse_context *mpsse)
 	uint8_t val = 0;
 
 	if(is_valid_context(mpsse))
-	{
-		ftdi_read_pins((struct ftdi_context *) &mpsse->ftdi, (unsigned char *) &val);
+	{       
+                uint8_t *val_pointer = kmalloc(sizeof(uint8_t), GFP_KERNEL);;
+		ftdi_read_pins((struct ftdi_context *) &mpsse->ftdi, (unsigned char *) val_pointer);
+                val = *val_pointer;
+                kfree(val_pointer);
 	}
 
 	return (int) val;
