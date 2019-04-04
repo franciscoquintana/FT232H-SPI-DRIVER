@@ -3,6 +3,8 @@
  *
  * Craig Heffner
  * 27 December 2011
+ * Francisco Quintana
+ * 2018 - 2019
  */
 
 #include "support.h"
@@ -51,6 +53,7 @@ struct mpsse_context *OpenIndex(struct usb_device* usb_dev, struct usb_interface
 				mpsse->mode = mode;
 				mpsse->status = STOPPED;
 				mpsse->endianess = endianess;
+				mpsse->fast_rw_buf = kmalloc(SPI_RW_SIZE + CMD_SIZE, GFP_KERNEL);
 
 				/* Set the appropriate transfer size for the requested protocol */
 				if(mpsse->mode == I2C)
@@ -318,7 +321,6 @@ int SetClock(struct mpsse_context *mpsse, uint32_t freq)
 	unsigned char buf[CMD_SIZE] = { 0 };
 
 	/* Do not call is_valid_context() here, as the FTDI chip may not be completely configured when SetClock is called */
- printk(KERN_ALERT "%i", mpsse);
 	if(mpsse)
 	{
 		if(freq > SIX_MHZ)
@@ -331,10 +333,8 @@ int SetClock(struct mpsse_context *mpsse, uint32_t freq)
 			buf[0] = TCK_D5;
 			system_clock = TWELVE_MHZ;
 		}
-		 printk(KERN_ALERT "WRITE?");
 		if(raw_write(mpsse, buf, 1) == MPSSE_OK)
 		{
-	 printk(KERN_ALERT "WRITE");
 			if(freq <= 0)
 			{
 				divisor = 0xFFFF;
@@ -347,7 +347,6 @@ int SetClock(struct mpsse_context *mpsse, uint32_t freq)
 			buf[0] = TCK_DIVISOR;
 			buf[1] = (divisor & 0xFF);
 			buf[2] = ((divisor >> 8) & 0xFF);
-	 printk(KERN_ALERT "WRITE?");
 			if(raw_write(mpsse, buf, 3) == MPSSE_OK)
 			{
 				mpsse->clock = div2freq(system_clock, divisor);
@@ -705,8 +704,8 @@ char *InternalRead(struct mpsse_context *mpsse, int size)
 {
 	unsigned char *data = NULL, *buf = NULL;
 	unsigned char *sbuf = NULL;
-        sbuf = kmalloc(SPI_RW_SIZE * sizeof(unsigned char), GFP_KERNEL);
-        memset(sbuf, 0, SPI_RW_SIZE * sizeof(unsigned char));
+    sbuf = kmalloc(SPI_RW_SIZE * sizeof(unsigned char), GFP_KERNEL);
+    memset(sbuf, 0, SPI_RW_SIZE * sizeof(unsigned char));
 	int n = 0, rxsize = 0, data_size = 0, retval = 0;
 
 	if(is_valid_context(mpsse))
@@ -734,7 +733,8 @@ char *InternalRead(struct mpsse_context *mpsse, int size)
 						
 						if(retval == MPSSE_OK)
 						{
-							n += raw_read(mpsse, buf+n, rxsize);
+							n += 
+							raw_read(mpsse, buf+n, rxsize);
 						}
 						else
 						{
@@ -855,7 +855,6 @@ char *Transfer(struct mpsse_context *mpsse, char *data, int size)
 					{
 						rxsize = SPI_TRANSFER_SIZE;
 					}
-
 					txdata = build_block_buffer(mpsse, mpsse->txrx, (unsigned char *) (data + n), rxsize, &data_size);
 					if(txdata)
 					{

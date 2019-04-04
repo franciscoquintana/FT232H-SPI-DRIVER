@@ -3,6 +3,7 @@
                              -------------------
     begin                : Fri Apr 4 2003
     copyright            : (C) 2003-2017 by Intra2net AG and the libftdi developers
+                           2018-2019 Francisco Quintana
     email                : opensource@intra2net.com
  ***************************************************************************/
 

@@ -57,7 +57,7 @@
 #define FT232H_SPI_MODALIAS          "spidev"
 #define FT232H_SPI_MODE              SPI_MODE_0
 #define FT232H_SPI_MIN_FREQ          400
-#define FT232H_SPI_MAX_FREQ          1e6
+#define FT232H_SPI_MAX_FREQ          30000000
 #define FT232H_SPI_MIN_BITS_PER_WORD 4
 #define FT232H_SPI_MAX_BITS_PER_WORD 32
 
@@ -90,7 +90,7 @@ struct ft232h_pin_config {
 struct ft232h_pin_config ft232h_board_config[FT232H_GPIO_NUM_PINS] = 
 {
     // pin  GPIO mode           GPIO name   VALUE
-    {   GPIOL0, FT232H_PIN_MODE_OUT , "gpio4"     , 0 }
+    {   GPIOH0, FT232H_PIN_MODE_OUT , "gpio4"     , 0 }
 
 };
 
@@ -189,6 +189,10 @@ static struct mutex ft232h_lock;
 
 #define ft232h_spi_maser_to_dev(m) *((struct ft232h_device**)spi_master_get_devdata(m))
 
+/**
+* TODO 
+**/
+
 static int FT232H_spi_set_cs (struct spi_device *spi, bool active)
 {
     /*struct ft232h_device* ft232h_dev;
@@ -222,6 +226,7 @@ static int FT232H_spi_set_cs (struct spi_device *spi, bool active)
     return FT232H_OK;
 }
 
+int contador = 0;
 static int FT232H_spi_transfer_one(struct spi_master *master,
         struct spi_device *spi, 
         struct spi_transfer* t)
@@ -231,7 +236,6 @@ static int FT232H_spi_transfer_one(struct spi_master *master,
     uint8_t* rx;
     bool lsb; 
     int result = 0;
-    int i;
 
     CHECK_PARAM_RET (ft232h_dev, EIO);
     CHECK_PARAM_RET (master   , EIO)
@@ -249,19 +253,25 @@ static int FT232H_spi_transfer_one(struct spi_master *master,
     u32 speed = spi->max_speed_hz;
     if(t->speed_hz != 0)
         speed = t->speed_hz;
+    if(ft232h_dev->mpsse->clock != speed) {
+	//DEV_INFO (FT232H_IF_ADDR, "speed1%d ", ft232h_dev->mpsse->clock );
+	SetClock(ft232h_dev->mpsse, speed);
+	//DEV_INFO (FT232H_IF_ADDR, "speed%d ", speed);
+    }
+    /**
+    * TODO FIX GPIO RESET ON CHANGE
+    **/
 
-    SetClock(ft232h_dev->mpsse, speed);
-    SetMode(ft232h_dev->mpsse, (lsb ? LSB : MSB));
+    //enum modes mode = (lsb ? LSB : MSB);
+    //if(ft232h_dev->mpsse->mode != mode)
+    //SetMode(ft232h_dev->mpsse, mode);
+
 
     Start(ft232h_dev->mpsse);
-    //Write(ft232h_dev->mpsse, tx, t->len);
-    //rx = Read(ft232h_dev->mpsse, t->len);
-    rx = Transfer(ft232h_dev->mpsse, tx, t->len);
+    FastTransfer(ft232h_dev->mpsse, tx, rx, t->len);
+
     Stop(ft232h_dev->mpsse);
-
-
     spi_finalize_current_transfer(master);
-
     mutex_unlock (&ft232h_lock);
 
     return result;
@@ -338,7 +348,6 @@ static int ft232h_spi_probe (struct ft232h_device* ft232h_dev)
     mutex_init (&ft232h_lock);
 
     DEV_DBG (FT232H_IF_ADDR, "done");
-
     return FT232H_OK;
 }
 
@@ -526,11 +535,11 @@ void ft232h_gpio_read_inputs (struct ft232h_device* ft232h_dev)
             
         // determin old an new value of the bit
         old_value = ft232h_dev->gpio_pins[gpio]->value;
-        mutex_lock (&ft232h_lock);
+        //mutex_lock (&ft232h_lock);
 
         new_value = PinState(ft232h_dev->mpsse_gpio, ft232h_dev->gpio_pins[gpio]->pin, -1);
      
-        mutex_unlock (&ft232h_lock);
+        //mutex_unlock (&ft232h_lock);
 
         ft232h_dev->gpio_pins[gpio]->value = new_value;
             
@@ -647,6 +656,7 @@ void ft232h_gpio_set (struct gpio_chip *chip, unsigned offset, int value)
     CHECK_PARAM (offset < ft232h_dev->gpio_num);
 
     mutex_lock (&ft232h_lock);
+    //DEV_INFO (FT232H_IF_ADDR, "gpio=%d value=%i", offset, value);
     gpio_write(ft232h_dev->mpsse_gpio, ft232h_dev->gpio_pins[offset]->pin, value);
     mutex_unlock (&ft232h_lock);
 }
@@ -666,6 +676,7 @@ int ft232h_gpio_get_direction (struct gpio_chip *chip, unsigned offset)
     mode = (ft232h_dev->gpio_pins[offset]->mode == FT232H_PIN_MODE_IN) ? 1 : 0;
 
     DEV_DBG (FT232H_IF_ADDR, "gpio=%d dir=%d", offset, mode);
+ 
 
     return mode;
 }
@@ -795,7 +806,7 @@ static int ft232h_gpio_probe (struct ft232h_device* ft232h_dev)
             j++;
         }
 
-    ft232h_dev->gpio_thread = kthread_run (&ft232h_gpio_poll_function, ft232h_dev, "spi-ft232h-usb-poll");
+    //ft232h_dev->gpio_thread = kthread_run (&ft232h_gpio_poll_function, ft232h_dev, "spi-ft232h-usb-poll");
 
     DEV_DBG (FT232H_IF_ADDR, "done");
 

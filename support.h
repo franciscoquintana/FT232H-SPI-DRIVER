@@ -4,6 +4,7 @@
 #include "mpsse.h"
 
 int raw_write(struct mpsse_context *mpsse, unsigned char *buf, int size);
+int raw_write_secure(struct mpsse_context *mpsse, unsigned char *buf, int size);
 int raw_read(struct mpsse_context *mpsse, unsigned char *buf, int size);
 void set_timeouts(struct mpsse_context *mpsse, int timeout);
 uint16_t freq2div(uint32_t system_clock, uint32_t freq);
@@ -13,5 +14,6 @@ int set_bits_high(struct mpsse_context *mpsse, int port);
 int set_bits_low(struct mpsse_context *mpsse, int port);
 int gpio_write(struct mpsse_context *mpsse, int pin, int direction);
 int is_valid_context(struct mpsse_context *mpsse);
+int FastTransfer(struct mpsse_context *mpsse, char *wdata, char *rdata, int size);
 
 #endif

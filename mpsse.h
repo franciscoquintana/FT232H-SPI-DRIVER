@@ -2,6 +2,7 @@
 #define _LIBMPSSE_H_
 
 #include "ftdi.h"
+#include <linux/slab.h>
 
 #define MPSSE_OK		0
 #define MPSSE_FAIL		-1
@@ -163,6 +164,7 @@ struct mpsse_context
 	uint8_t txrx;
 	uint8_t tack;
 	uint8_t rack;
+        unsigned char *fast_rw_buf;
 };
 
 struct mpsse_context *OpenIndex(struct usb_device* usb_dev, struct usb_interface* usb_if, enum modes mode, int freq, int endianess, int interface);

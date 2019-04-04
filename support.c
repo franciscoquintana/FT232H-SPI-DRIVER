@@ -3,6 +3,8 @@
  *
  * Craig Heffner
  * 27 December 2011
+ * Francisco Quintana
+ * 2018 - 2019
  */
 
 #include "support.h"
@@ -14,29 +16,47 @@ int raw_write(struct mpsse_context *mpsse, unsigned char *buf, int size)
 
         if(mpsse->mode)
 	{
-                unsigned char *buff_memory = kmalloc(sizeof(unsigned char) * size, GFP_KERNEL);
-                memcpy(buff_memory, buf, size);
-		if(ftdi_write_data(&mpsse->ftdi, buff_memory, size) == size)
+                //unsigned char *buff_memory = kmalloc(sizeof(unsigned char) * size, GFP_KERNEL);
+                memcpy(mpsse->fast_rw_buf, buf, size);
+		if(ftdi_write_data(&mpsse->ftdi, mpsse->fast_rw_buf, size) == size)
         	{
                 	retval = MPSSE_OK;
 		}
-                kfree(buff_memory);
+                //kfree(buff_memory);
         }
 
 	return retval;
 }
 
+int raw_write_secure(struct mpsse_context *mpsse, unsigned char *buf, int size)
+{
+        int retval = MPSSE_FAIL;
+
+        if(mpsse->mode)
+	{
+		if(ftdi_write_data(&mpsse->ftdi, buf, size) == size)
+        	{
+                	retval = MPSSE_OK;
+		}
+        }
+
+	return retval;
+}
+
+
 /* Read data from the FTDI chip */
 int raw_read(struct mpsse_context *mpsse, unsigned char *buf, int size)
 {
 	int n = 0, r = 0;
-
 	if(mpsse->mode)
 	{
 		while(n < size)
 		{
 			r = ftdi_read_data(&mpsse->ftdi, buf, size);
-			if(r < 0) break;
+            		/*if(r == 0) {
+    printk(KERN_ALERT "fail size: %i", size);
+break;
+ }*/
 			n += r;
 		}
 
@@ -50,7 +70,6 @@ int raw_read(struct mpsse_context *mpsse, unsigned char *buf, int size)
 			ftdi_usb_purge_rx_buffer(&mpsse->ftdi);
 		}
 	}
-
 	return n;
 }
 

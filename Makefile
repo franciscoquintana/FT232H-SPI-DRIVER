@@ -15,7 +15,7 @@ endif
 
 MODULE_NAME  = spi-ft232h-usb
 obj-m := $(MODULE_NAME).o
-$(MODULE_NAME)-objs := ft232h.o mpsse.o support.o ftdi.o
+$(MODULE_NAME)-objs := ft232h.o mpsse.o fast.o support.o ftdi.o
 
 $(MODULE_NAME).ko: 
 	make -C $(KERNEL_DIR) M=$(PWD) modules
